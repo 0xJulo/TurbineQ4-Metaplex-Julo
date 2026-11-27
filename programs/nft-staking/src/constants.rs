@@ -1,10 +1,10 @@
 use anchor_lang::prelude::*;
 
 #[constant]
-pub const COUNTER_SEED: &[u8] = b"counter";
+pub const CONFIG_SEED: &[u8] = b"config";
 
 #[constant]
-pub const HELLO_WORLD_LAMPORTS: u64 = 1;
+pub const REWARDS_SEED: &[u8] = b"rewards";
 
 #[constant]
-pub const MAX_COUNT: u64 = 10;
+pub const AUTHORITY_SEED: &[u8] = b"authority";

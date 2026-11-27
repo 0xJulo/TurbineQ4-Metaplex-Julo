@@ -14,12 +14,4 @@ declare_id!("5QSBQgDmDTapeQgjU1V7ppZCmhFQnyUBPNwQ6XGMumr3");
 #[program]
 pub mod nft_staking {
     use super::*;
-
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        crate::instructions::initialize::handle_initialize(ctx)
-    }
-
-    pub fn increment(ctx: Context<Increment>) -> Result<()> {
-        crate::instructions::increment::handle_increment(ctx)
-    }
 }

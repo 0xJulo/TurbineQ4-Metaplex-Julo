@@ -14,4 +14,8 @@ declare_id!("5QSBQgDmDTapeQgjU1V7ppZCmhFQnyUBPNwQ6XGMumr3");
 #[program]
 pub mod nft_staking {
     use super::*;
+
+    pub fn create_collection(ctx: Context<CreateCollection>, name: String, uri: String) -> Result<()> {
+        ctx.accounts.create_collection(name, uri)
+    }
 }

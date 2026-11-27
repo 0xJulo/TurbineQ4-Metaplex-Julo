@@ -18,4 +18,8 @@ pub mod nft_staking {
     pub fn create_collection(ctx: Context<CreateCollection>, name: String, uri: String) -> Result<()> {
         ctx.accounts.create_collection(name, uri)
     }
+
+    pub fn mint_nft(ctx: Context<MintNFT>, name: String, uri: String) -> Result<()> {
+        ctx.accounts.mint_nft(name, uri, &ctx.bumps)
+    }
 }

@@ -8,3 +8,5 @@ pub const REWARDS_SEED: &[u8] = b"rewards";
 
 #[constant]
 pub const AUTHORITY_SEED: &[u8] = b"authority";
+
+pub const SECONDS_PER_DAY: i64 = 86_400;

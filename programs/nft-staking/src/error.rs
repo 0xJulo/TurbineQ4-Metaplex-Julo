@@ -10,4 +10,10 @@ pub enum StakingError {
     AlreadyStaked,
     #[msg("Arithmetic overflow")]
     Overflow,
+    #[msg("NFT is not currently staked")]
+    NotStaked,
+    #[msg("Invalid staking timestamp")]
+    InvalidTimestamp,
+    #[msg("Minimum staking period has not elapsed")]
+    FreezePeriodNotElapsed,
 }

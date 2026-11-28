@@ -1,9 +1,21 @@
 use anchor_lang::prelude::*;
 use mpl_core::ID as MPL_CORE_ID;
 use mpl_core::accounts::{BaseAssetV1, BaseCollectionV1};
-use mpl_core::types::{Attributes, Attribute, Plugin, PluginType, PluginAuthority, UpdateAuthority};
+use mpl_core::types::{
+    Attributes, 
+    Attribute, 
+    FreezeDelegate,
+    Plugin, 
+    PluginType, 
+    PluginAuthority, 
+    UpdateAuthority};
 use mpl_core::fetch_plugin;
-use mpl_core::instructions::{AddPluginV1CpiBuilder, UpdatePluginV1CpiBuilder};
+use mpl_core::instructions::{
+    AddCollectionPluginV1CpiBuilder,
+    AddPluginV1CpiBuilder,
+    UpdateCollectionPluginV1CpiBuilder,
+    UpdatePluginV1CpiBuilder,
+};
 
 use crate::constants::*;
 use crate::state::ConfigCollection;
@@ -131,6 +143,90 @@ impl<'info> Stake<'info> {
                     .system_program(&self.system_program.to_account_info())
                     .plugin(Plugin::Attributes(Attributes { attribute_list }
                     ))
+                    .invoke_signed(signer_seeds)?;
+            }
+        }
+
+        // Freeze the NFT so it can't be transferred while staked
+        match fetch_plugin::<BaseAssetV1, FreezeDelegate>(
+            &self.asset.to_account_info(),
+            PluginType::FreezeDelegate,
+        ) {
+            Err(_) => {
+                AddPluginV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+                    .asset(&self.asset.to_account_info())
+                    .collection(Some(&self.collection.to_account_info()))
+                    .payer(&self.owner.to_account_info())
+                    .authority(Some(&self.owner.to_account_info()))
+                    .system_program(&self.system_program.to_account_info())
+                    .plugin(Plugin::FreezeDelegate(FreezeDelegate { frozen: true }))
+                    .init_authority(PluginAuthority::UpdateAuthority)
+                    .invoke()?;
+            }
+            Ok(_) => {
+                UpdatePluginV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+                    .asset(&self.asset.to_account_info())
+                    .collection(Some(&self.collection.to_account_info()))
+                    .payer(&self.owner.to_account_info())
+                    .authority(Some(&self.update_authority.to_account_info()))
+                    .system_program(&self.system_program.to_account_info())
+                    .plugin(Plugin::FreezeDelegate(FreezeDelegate { frozen: true }))
+                    .invoke_signed(signer_seeds)?;
+            }
+        }
+
+        // Track how many NFTs are currently staked in this collection
+        match fetch_plugin::<BaseCollectionV1, Attributes>(
+            &self.collection.to_account_info(),
+            PluginType::Attributes,
+        ) {
+            Err(_) => {
+                // First NFT staked in this collection: attach Attributes with total_staked = 1
+                AddCollectionPluginV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+                    .collection(&self.collection.to_account_info())
+                    .payer(&self.owner.to_account_info())
+                    .authority(Some(&self.update_authority.to_account_info()))
+                    .system_program(&self.system_program.to_account_info())
+                    .plugin(Plugin::Attributes(Attributes {
+                        attribute_list: vec![Attribute {
+                            key: "total_staked".to_string(),
+                            value: "1".to_string(),
+                        }],
+                    }))
+                    .init_authority(PluginAuthority::UpdateAuthority)
+                    .invoke_signed(signer_seeds)?;
+            }
+            Ok((_, attrs, _)) => {
+                // Collection already has Attributes: keep other attributes and increment total_staked
+                let mut attribute_list: Vec<Attribute> = Vec::new();
+                let mut total_staked: u64 = 0;
+
+                for attribute in attrs.attribute_list {
+                    if attribute.key == "total_staked" {
+                        total_staked = attribute
+                            .value
+                            .parse::<u64>()
+                            .map_err(|_| StakingError::Overflow)?;
+                    } else {
+                        attribute_list.push(attribute);
+                    }
+                }
+
+                let new_total = total_staked
+                    .checked_add(1)
+                    .ok_or(StakingError::Overflow)?;
+
+                attribute_list.push(Attribute {
+                    key: "total_staked".to_string(),
+                    value: new_total.to_string(),
+                });
+
+                UpdateCollectionPluginV1CpiBuilder::new(&self.mpl_core_program.to_account_info())
+                    .collection(&self.collection.to_account_info())
+                    .payer(&self.owner.to_account_info())
+                    .authority(Some(&self.update_authority.to_account_info()))
+                    .system_program(&self.system_program.to_account_info())
+                    .plugin(Plugin::Attributes(Attributes { attribute_list }))
                     .invoke_signed(signer_seeds)?;
             }
         }

@@ -35,4 +35,8 @@ pub mod nft_staking {
         ctx.accounts
             .initialize_config(min_days_staked, daily_reward_rate, &ctx.bumps)
     }
+
+    pub fn stake(ctx: Context<Stake>) -> Result<()> {
+        ctx.accounts.stake_asset(&ctx.bumps)
+    }
 }

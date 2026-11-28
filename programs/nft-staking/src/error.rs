@@ -8,4 +8,6 @@ pub enum StakingError {
     InvalidOwner,
     #[msg("NFT is already staked")]
     AlreadyStaked,
+    #[msg("Arithmetic overflow")]
+    Overflow,
 }
